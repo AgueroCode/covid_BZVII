@@ -28,11 +28,38 @@ def laprovincia(codigoProvincia): #entre parantesis siempre se pone lo que has m
     fichero.close()
     return "El valor no existe"
 
-# @app.route("/casos/<int:year>", defaults={'mes':Nones,'dia':None}) #esto daria los casos del año entero
-# @app.route("/casos/<int:year>/<int:mes>", defaults={'dia':None}) #esto daria los casos del mes entero
-
-@app.route("/casos/<int:year>/<int:mes>/<int:dia>")
+@app.route("/casos/<int:year>", defaults={'mes':None,'dia':None}) 
+@app.route("/casos/<int:year>/<int:mes>", defaults={'dia':None}) 
+@app.route("/casos/<int:year>/<int:mes>/<int:dia>") #ponemos int para que sean numero enteros
 def casos(year, mes, dia):
-    pass
-    #1er caso devolver el numero total de casos de covid en un dia del año determinado para todas las provincias
-    #2do caso. Lo mismo pero detallado por tipo de prueba diagnostica. PCR, AC, AG, ELISA, DESCONOCIDO -> JSON
+
+    if not mes:
+        fecha = "{:04d}".format(year, mes)
+    elif not dia: 
+        fecha = "{:04d}-{:02d}".format(year, mes)
+    else:
+        fecha = "{:04d}-{:02d}-{:02d}".format(year, mes, dia) #equivale a f"{:04d}-{:02d}-{:02d}"
+    
+    fichero = open("data/casos_diagnostico_provincia.csv", "r", encoding="utf8")
+    dictreader = csv.DictReader(fichero) 
+    
+    res = {
+        'num_casos': 0,
+        'num_casos_prueba_pcr': 0,
+        'num_casos_prueba_test_ac': 0,
+        'num_casos_prueba_ag': 0,
+        'num_casos_prueba_elisa': 0,
+        'num_casos_prueba_desconocida': 0
+    }
+
+    for registro in dictreader: #iteramos el diccionario de todos los registros
+        if fecha in registro['fecha']:
+            for clave in res: #iteramos el diccionario que hemos creado
+                res[clave] += int(registro[clave])
+
+        elif registro['fecha'] > fecha:
+            break
+
+    fichero.close()
+    return json.dumps(res)
+
